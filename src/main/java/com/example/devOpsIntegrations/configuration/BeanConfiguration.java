@@ -1,26 +1,42 @@
 package com.example.devOpsIntegrations.configuration;
 
+import java.net.URI;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-
-import com.google.common.base.Predicates;
-
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+import com.atlassian.jira.rest.client.api.JiraRestClient;
+import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
+import com.example.devOpsIntegrations.controller.MyJiraClient;
 
 @Configuration
 public class BeanConfiguration {
+	
+	@Value("${application.jira.root.uri}")
+	private String ROOT_URI;
+	private String username;
+    private String password;
 	
 	@Bean
 	public RestTemplate getRestTemplate() {
 		return new RestTemplate();
 	}
+	
+	@Bean
+	public JiraRestClient getJiraRestClient() {
+       return new AsynchronousJiraRestClientFactory()
+         .createWithBasicHttpAuthentication(getJiraUri(), this.username, this.password);
+    }
+	
+	@Bean
+	public MyJiraClient getMyJiraClient() {
+       return new MyJiraClient(this.username, this.password,this.ROOT_URI ,getJiraRestClient());
+    }
+	
+	private URI getJiraUri() {
+        return URI.create(this.ROOT_URI);
+    }
 	
 	
 

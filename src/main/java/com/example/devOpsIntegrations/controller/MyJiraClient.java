@@ -22,37 +22,14 @@ public class MyJiraClient {
     private String jiraUrl;
     private JiraRestClient restClient;
 
-    private MyJiraClient(String username, String password, String jiraUrl) {
-        this.username = username;
+    public MyJiraClient(String username, String password, String jiraUrl, JiraRestClient jiraRestClient) {
+    	this.username = username;
         this.password = password;
         this.jiraUrl = jiraUrl;
-        this.restClient = getJiraRestClient();
-    }
+        this.restClient = jiraRestClient;
+	}
 
-    public static void main(String[] args) throws IOException {
-
-        MyJiraClient myJiraClient = new MyJiraClient("nanigrk", "Kishore@0131", "http://jira.testCom1234.com");
-
-        final String issueKey = myJiraClient.createIssue("ABCD", 1L, "Issue created from JRJC");
-        myJiraClient.updateIssueDescription(issueKey, "This is description from my Jira Client");
-        Issue issue = myJiraClient.getIssue(issueKey);
-        System.out.println(issue.getDescription());
-
-        myJiraClient.voteForAnIssue(issue);
-
-        System.out.println(myJiraClient.getTotalVotesCount(issueKey));
-
-        myJiraClient.addComment(issue, "This is comment from my Jira Client");
-
-        List<Comment> comments = myJiraClient.getAllComments(issueKey);
-        comments.forEach(c -> System.out.println(c.getBody()));
-
-        myJiraClient.deleteIssue(issueKey, true);
-
-        myJiraClient.restClient.close();
-    }
-
-    private String createIssue(String projectKey, Long issueType, String issueSummary) {
+    public String createIssue(String projectKey, Long issueType, String issueSummary) {
 
         IssueRestClient issueClient = restClient.getIssueClient();
 
@@ -61,44 +38,36 @@ public class MyJiraClient {
         return issueClient.createIssue(newIssue).claim().getKey();
     }
 
-    private Issue getIssue(String issueKey) {
+    public Issue getIssue(String issueKey) {
         return restClient.getIssueClient().getIssue(issueKey).claim();
     }
 
-    private void voteForAnIssue(Issue issue) {
+    public void voteForAnIssue(Issue issue) {
         restClient.getIssueClient().vote(issue.getVotesUri()).claim();
     }
 
-    private int getTotalVotesCount(String issueKey) {
+    public int getTotalVotesCount(String issueKey) {
         BasicVotes votes = getIssue(issueKey).getVotes();
         return votes == null ? 0 : votes.getVotes();
     }
 
-    private void addComment(Issue issue, String commentBody) {
+    public void addComment(Issue issue, String commentBody) {
         restClient.getIssueClient().addComment(issue.getCommentsUri(), Comment.valueOf(commentBody));
     }
 
-    private List<Comment> getAllComments(String issueKey) {
+    public List<Comment> getAllComments(String issueKey) {
         return StreamSupport.stream(getIssue(issueKey).getComments().spliterator(), false)
           .collect(Collectors.toList());
     }
 
-    private void updateIssueDescription(String issueKey, String newDescription) {
+    public void updateIssueDescription(String issueKey, String newDescription) {
         IssueInput input = new IssueInputBuilder().setDescription(newDescription).build();
         restClient.getIssueClient().updateIssue(issueKey, input).claim();
     }
 
-    private void deleteIssue(String issueKey, boolean deleteSubtasks) {
+    public void deleteIssue(String issueKey, boolean deleteSubtasks) {
         restClient.getIssueClient().deleteIssue(issueKey, deleteSubtasks).claim();
     }
 
-    private JiraRestClient getJiraRestClient() {
-        return new AsynchronousJiraRestClientFactory()
-          .createWithBasicHttpAuthentication(getJiraUri(), this.username, this.password);
-    }
-
-    private URI getJiraUri() {
-        return URI.create(this.jiraUrl);
-    }
 }
 
